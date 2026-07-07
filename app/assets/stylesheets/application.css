@@ -123,6 +123,27 @@ a { color: inherit; text-decoration: none; }
 
 .empty { padding: 3rem 1.5rem; text-align: center; color: var(--muted); }
 
+/* Search results */
+.search-modes { display: flex; gap: 1rem; padding-top: 0.5rem; font-size: 0.95rem; }
+.search-modes a { color: var(--muted); }
+.search-modes a.active { color: var(--blue); font-weight: 600; }
+.search-modes .cancel { margin-left: auto; color: var(--blue); }
+
+.results { padding: 0 1rem 2rem; }
+.results h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 1.4rem 0 0.4rem; }
+
+.result { display: block; padding: 0.55rem 0; border-bottom: 1px solid var(--line); }
+.result-meta { display: flex; justify-content: space-between; gap: 0.5rem; }
+.result-name { font-weight: 600; font-size: 0.92rem; }
+.result-time { color: var(--muted); font-size: 0.8rem; }
+.result-body { color: var(--muted); font-size: 0.92rem; }
+.result-chat { display: block; padding: 0.4rem 0; font-weight: 600; }
+
+.answer { background: #7676801a; border-radius: 0.8rem; padding: 0.9rem 1rem; margin-top: 1rem; }
+.answer h2 { margin-top: 0; }
+.answer p { margin: 0.3rem 0 0.6rem; }
+.answer-sources { margin: 0; padding-left: 1.2rem; }
+
 .flash { padding: 0.5rem 1rem 0; }
 .flash p { margin: 0.3rem 0; padding: 0.5rem 0.8rem; border-radius: 0.6rem; font-size: 0.9rem; background: #ffefef; color: #b00020; }
 

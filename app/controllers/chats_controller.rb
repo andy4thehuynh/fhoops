@@ -4,7 +4,6 @@ class ChatsController < ApplicationController
   def index
     @favorites = Contact.favorites
     @chats = Chat.includes(:contact).by_recency
-    @chats = @chats.matching(params[:q]) if params[:q].present?
   end
 
   def show

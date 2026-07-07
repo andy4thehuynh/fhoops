@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   root "chats#index"
 
   resources :chats, only: %i[index show]
+  resource :search, only: :show
 
   resources :favorites, only: %i[create destroy]
   namespace :favorites do

@@ -23,11 +23,9 @@ class ChatsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".favorites .favorite-name", text: "Mom"
   end
 
-  test "search filters the chat list by contact" do
-    get root_path, params: { q: "Mom" }
-
-    assert_select ".chat-row", count: 1
-    assert_select ".chat-name", text: "Mom"
+  test "the search bar submits to the search screen" do
+    get root_path
+    assert_select "form[action=?] input[name=q]", search_path
   end
 
   test "thread shows decrypted bubbles, mine on the right" do

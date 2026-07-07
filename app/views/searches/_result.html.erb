@@ -1,0 +1,7 @@
+<%= link_to chat_path(message.chat), class: "result" do %>
+  <span class="result-meta">
+    <span class="result-name"><%= message.is_from_me ? "Me → #{message.chat.contact.display_name}" : message.chat.contact.display_name %></span>
+    <span class="result-time"><%= succinct_timestamp(message.sent_at) %></span>
+  </span>
+  <span class="result-body"><%= truncate(message.body.presence || message.embedding_text, length: 140) %></span>
+<% end %>

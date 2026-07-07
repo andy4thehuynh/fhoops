@@ -1,0 +1,67 @@
+<% content_for :title, @query.present? ? "Search: #{@query}" : "Search" %>
+
+<header class="topbar">
+  <%= form_with url: search_path, method: :get, class: "search" do |form| %>
+    <%= form.hidden_field :mode, value: @mode %>
+    <%= form.search_field :q, value: @query, placeholder: "Search", autocomplete: "off", autofocus: true %>
+  <% end %>
+
+  <nav class="search-modes">
+    <%= link_to "Search", search_path(q: @query), class: ("active" if @mode == "search") %>
+    <% if Search.generation_enabled? %>
+      <%= link_to "Ask", search_path(q: @query, mode: "ask"), class: ("active" if @mode == "ask") %>
+    <% end %>
+    <%= link_to "Cancel", root_path, class: "cancel" %>
+  </nav>
+</header>
+
+<main class="results">
+  <% if @query.blank? %>
+    <p class="empty">Search your entire archive — by keyword or by meaning.</p>
+  <% else %>
+    <% if @answer %>
+      <section class="answer">
+        <h2>Answer</h2>
+        <p><%= @answer.text %></p>
+        <ol class="answer-sources">
+          <% @answer.sources.each do |message| %>
+            <li><%= render "result", message: message %></li>
+          <% end %>
+        </ol>
+      </section>
+    <% elsif @mode == "ask" %>
+      <p class="empty">No answer — nothing relevant found in the archive (is Ollama running?).</p>
+    <% end %>
+
+    <% if @chats.any? %>
+      <section>
+        <h2>Conversations</h2>
+        <% @chats.each do |chat| %>
+          <%= link_to chat.contact.display_name, chat_path(chat), class: "result-chat" %>
+        <% end %>
+      </section>
+    <% end %>
+
+    <section>
+      <h2>Messages</h2>
+      <% if @keyword_matches.any? %>
+        <% @keyword_matches.each do |message| %>
+          <%= render "result", message: message %>
+        <% end %>
+      <% else %>
+        <p class="empty">No keyword matches.</p>
+      <% end %>
+    </section>
+
+    <section>
+      <h2>Similar by meaning</h2>
+      <% if @semantic_matches.any? %>
+        <% @semantic_matches.each do |message| %>
+          <%= render "result", message: message %>
+        <% end %>
+      <% else %>
+        <p class="empty">No semantic matches — run <code>bin/rails embeddings:backfill</code> with Ollama up.</p>
+      <% end %>
+    </section>
+  <% end %>
+</main>
