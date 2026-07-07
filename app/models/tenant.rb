@@ -15,9 +15,10 @@ class Tenant < ApplicationRecord
       find_or_create_by!(name: name).tap(&:prepare)
     end
 
-    # self_host mode runs exactly one tenant.
+    # self_host mode runs one tenant, canonically named "default"; fall
+    # back to sole so a differently named single tenant still works.
     def default
-      sole
+      find_by(name: "default") || sole
     end
 
     def storage_root
