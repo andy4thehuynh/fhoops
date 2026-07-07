@@ -27,8 +27,11 @@ Rails.application.configure do
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
   config.assume_ssl = true
 
-  # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  config.force_ssl = true
+  # iKeep lives on a private tailnet, where the transport is already
+  # encrypted end-to-end and `tailscale serve` adds real HTTPS on top.
+  # Forcing SSL inside the app would only break plain http://mini:3000
+  # access on the tailnet; opt back in with IKEEP_FORCE_SSL=true.
+  config.force_ssl = ENV["IKEEP_FORCE_SSL"] == "true"
 
   # Skip http-to-https redirect for the default health check endpoint.
   # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }

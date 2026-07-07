@@ -1,0 +1,10 @@
+# Never bundle these into the image.
+/.git/
+/log/*
+/tmp/*
+/storage/*
+!/storage/.keep
+/config/master.key
+/config/credentials/*.key
+/ios/
+/.bundle/

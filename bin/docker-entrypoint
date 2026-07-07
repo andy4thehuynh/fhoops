@@ -1,0 +1,9 @@
+#!/bin/bash -e
+
+# Prepare databases (app DB, Solid trifecta, default tenant) when booting
+# the server; one-off commands run as-is.
+if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
+  ./bin/rails db:prepare db:seed
+fi
+
+exec "${@}"

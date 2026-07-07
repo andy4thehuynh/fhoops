@@ -1,0 +1,36 @@
+# iKeep under Docker Compose. Secrets come from a .env file next to this
+# one — see the README's Mac mini guide. Ollama runs natively on the host
+# (Metal acceleration; a macOS container would be CPU-only), and the app
+# reaches it via host.docker.internal.
+services:
+  ikeep:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?add SECRET_KEY_BASE to .env — openssl rand -hex 64}
+      IKEEP_ENCRYPTION_SECRET: ${IKEEP_ENCRYPTION_SECRET:?add IKEEP_ENCRYPTION_SECRET to .env — openssl rand -hex 32}
+      IKEEP_KEY_DERIVATION_SALT: ${IKEEP_KEY_DERIVATION_SALT:?add IKEEP_KEY_DERIVATION_SALT to .env — openssl rand -hex 32}
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      GEN_MODEL: ${GEN_MODEL:-llama3.1:8b}
+      DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-self_host}
+    volumes:
+      # Everything that must survive the container: tenant databases live here.
+      - ./storage:/rails/storage
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # no-op on Docker Desktop, needed on Linux
+    restart: unless-stopped
+
+# Running Ollama in a container instead (Linux hosts with a GPU, or if you
+# accept CPU-only inference on a Mac):
+#
+#  ollama:
+#    image: ollama/ollama
+#    volumes:
+#      - ollama:/root/.ollama
+#    restart: unless-stopped
+#
+# volumes:
+#  ollama:
+#
+# ...and set OLLAMA_URL=http://ollama:11434 in .env.

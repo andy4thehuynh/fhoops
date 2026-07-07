@@ -95,7 +95,9 @@ bin/rails embeddings:backfill
 
 **5. Verify before you delete anything.** Open the app, spot-check your
 oldest conversations, search for things you remember, and confirm counts
-look right. Then back up the archive itself — it's one file:
+look right. Then back up the archive itself — it's one file (the same
+path whether you run natively or under Compose, since `storage/` is
+bind-mounted):
 
 ```sh
 cp storage/tenants/production/default.sqlite3 /Volumes/Backup/ikeep-$(date +%F).sqlite3
@@ -119,46 +121,151 @@ Confirm when iOS offers to delete older messages. Two honest warnings:
 least more often than your Keep Messages window, so nothing ages out
 before it's archived. Imports only ever add.
 
-## Deployment (self_host)
+## Self-hosting on a Mac mini
 
-iKeep is meant to run on a Mac (or any box) you own, reachable only over
-your private network. **Do not expose it to the public internet — it has
-no authentication.** Tailscale is the recommended transport.
+iKeep is meant to run on a box you own — here: a Mac mini — reachable
+only over your private network, administered from any laptop (say, a T14
+ThinkPad) over Tailscale SSH. **Do not expose it to the public internet —
+it has no authentication.** The tailnet is the perimeter.
+
+### 0. Wire up the tailnet and SSH in
+
+On the mini (one time, at the machine or via Screen Sharing):
+
+1. Install [Tailscale](https://tailscale.com/download) and sign in.
+2. Turn on Remote Login: System Settings → General → Sharing → Remote
+   Login. (Or let Tailscale handle auth entirely: `tailscale set --ssh`.)
+
+On the ThinkPad: install Tailscale, join the same tailnet, and from then
+on everything in this guide happens inside one SSH session:
 
 ```sh
-# one-time production setup
-export RAILS_ENV=production
-export IKEEP_ENCRYPTION_SECRET=$(openssl rand -hex 32)   # store in a password manager!
-bin/rails db:prepare db:seed
-
-# run it
-bin/rails server -p 3000
-
-# private HTTPS via Tailscale (install from tailscale.com, then):
-tailscale serve --bg 3000
-# → https://your-mac.your-tailnet.ts.net, visible only inside your tailnet
+ssh you@mini.your-tailnet.ts.net
 ```
 
-Keep the server alive across reboots with a `launchd` agent, e.g.
-`~/Library/LaunchAgents/com.ikeep.server.plist` running
-`bin/rails server -e production` from the app directory (set
-`RAILS_MASTER_KEY`/`IKEEP_ENCRYPTION_SECRET` in the plist's
-`EnvironmentVariables`), or just a `tmux` session if you prefer.
+One macOS gotcha worth knowing up front: reading `~/Library/Messages/`
+(the export step) requires Full Disk Access, and SSH sessions get it from
+the sshd entry, not your terminal app. Grant it once at System Settings →
+Privacy & Security → Full Disk Access → enable **sshd-keygen-wrapper**
+(it appears in the list after your first SSH attempt to touch a protected
+file).
 
-**Losing `IKEEP_ENCRYPTION_SECRET` means losing the archive** — bodies
-are encrypted with it. Store it (and `config/master.key`) somewhere that
-survives the machine: password manager or the macOS Keychain
-(`security add-generic-password -s ikeep -a encryption -w <secret>`, then
-inject it at boot).
+### 1. Generate the secrets (once, either path)
+
+```sh
+mkdir -p ~/ikeep && cd ~/ikeep && git clone <this repo> app && cd app
+cat > .env <<EOF
+SECRET_KEY_BASE=$(openssl rand -hex 64)
+IKEEP_ENCRYPTION_SECRET=$(openssl rand -hex 32)
+IKEEP_KEY_DERIVATION_SALT=$(openssl rand -hex 32)
+EOF
+chmod 600 .env
+```
+
+**Copy `.env` into your password manager now.** Losing
+`IKEEP_ENCRYPTION_SECRET` (or the salt) means losing the archive —
+message bodies are encrypted with keys derived from them. The `.env`
+file is gitignored and read by both setups below.
+
+### 2a. Docker Compose (simplest to operate)
+
+Install [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/)
+(or [OrbStack](https://orbstack.dev), which runs headless more happily)
+and [Ollama](https://ollama.com) — Ollama runs **natively**, not in the
+container, because macOS containers can't reach the GPU:
+
+```sh
+brew install ollama
+brew services start ollama          # survives reboots
+ollama pull nomic-embed-text && ollama pull llama3.1:8b
+
+docker compose up -d --build        # first boot migrates and seeds the default tenant
+curl -s http://localhost:3000/up    # → 200
+```
+
+Tenant databases live in `./storage` on the host (bind-mounted), so
+`docker compose down` and image rebuilds never touch your data. Import
+and embed by mounting the export into a one-off container:
+
+```sh
+docker compose run --rm -v "$HOME/imessage-export:/import:ro" ikeep \
+  bin/rails archive:import SOURCE=/import
+docker compose run --rm ikeep bin/rails embeddings:backfill
+```
+
+The commented-out `ollama` service in `compose.yml` is for Linux hosts,
+where a containerized Ollama can still use the GPU.
+
+### 2b. Native (no Docker, Metal-fast Ollama, launchd-managed)
+
+```sh
+brew install rbenv ruby-build ollama
+rbenv install $(cat .ruby-version)
+bundle install
+brew services start ollama
+ollama pull nomic-embed-text && ollama pull llama3.1:8b
+
+set -a; source .env; set +a
+RAILS_ENV=production bin/rails db:prepare db:seed
+RAILS_ENV=production bin/rails server   # smoke test, then Ctrl-C
+```
+
+Keep it alive across reboots with a launchd agent. Write
+`~/Library/LaunchAgents/com.ikeep.server.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.ikeep.server</string>
+  <key>WorkingDirectory</key><string>/Users/you/ikeep/app</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string><string>-lc</string>
+    <string>set -a; source .env; set +a; exec bin/rails server -e production</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/Users/you/ikeep/server.log</string>
+  <key>StandardErrorPath</key><string>/Users/you/ikeep/server.log</string>
+</dict></plist>
+```
+
+```sh
+launchctl load ~/Library/LaunchAgents/com.ikeep.server.plist
+```
+
+Import and embed run in the same directory with the same `.env` loaded:
+
+```sh
+set -a; source .env; set +a
+RAILS_ENV=production bin/rails archive:import SOURCE=~/imessage-export
+RAILS_ENV=production bin/rails embeddings:backfill
+```
+
+### 3. Reach it from everywhere on your tailnet
+
+```sh
+tailscale serve --bg 3000
+# → https://mini.your-tailnet.ts.net — real HTTPS, tailnet-only
+```
+
+That URL works from the ThinkPad's browser, your iPhone (with Tailscale
+installed), and is what the iOS shell's `rootURL` should point at. Plain
+`http://mini.your-tailnet.ts.net:3000` also works — the tailnet is
+already encrypted — which is why the app doesn't force SSL (opt back in
+with `IKEEP_FORCE_SSL=true`).
 
 ### Environment reference
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `DEPLOYMENT_MODE` | `self_host` | `self_host` or `hosted` |
+| `SECRET_KEY_BASE` | dev/test derive one | Rails secret; required in production |
 | `IKEEP_ENCRYPTION_SECRET` | dev/test derive one | Host encryption key (required in production self_host) |
-| `IKEEP_KEY_DERIVATION_SALT` | derived | Salt for key derivation |
-| `OLLAMA_URL` | `http://localhost:11434` | Local Ollama endpoint |
+| `IKEEP_KEY_DERIVATION_SALT` | derived from secret_key_base | Salt for key derivation — set it explicitly in production |
+| `IKEEP_FORCE_SSL` | `false` | Redirect all traffic to HTTPS inside the app |
+| `OLLAMA_URL` | `http://localhost:11434` | Local Ollama endpoint (`http://host.docker.internal:11434` under Compose) |
 | `EMBED_MODEL` | `nomic-embed-text` | Embedding model (768 dims) |
 | `GEN_MODEL` | `llama3.1:8b` | Generation model; `""` disables Ask (qwen2.5:7b also works) |
 | `TENANT` | `default` | Tenant for rake tasks |
