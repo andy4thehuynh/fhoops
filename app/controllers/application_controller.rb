@@ -10,6 +10,16 @@ class ApplicationController < ActionController::Base
 
   private
     def switch_to_current_tenant(&)
-      Tenant.default.switch(&)
+      current_tenant.switch(&)
+    end
+
+    # self_host runs the single tenant; hosted picks it from the subdomain
+    # (alpha.ikeep.example → tenant "alpha").
+    def current_tenant
+      if Deployment.hosted?
+        Tenant.find_by!(name: request.subdomains.first.to_s)
+      else
+        Tenant.default
+      end
     end
 end

@@ -77,6 +77,15 @@ class Tenant < ApplicationRecord
     @encryption_key_provider ||= ActiveRecord::Encryption::DerivedSecretKeyProvider.new(encryption_secret)
   end
 
+  # Deleting a tenant is deleting one file (plus its WAL companions):
+  # registry row gone, connections dropped, database removed. Nothing else
+  # in the system holds tenant data.
+  def purge!
+    destroy!
+    TenantRecord.connection_handler.remove_connection_pool(TenantRecord.name, role: :writing, shard: shard)
+    FileUtils.rm_f([ database_path.to_s, "#{database_path}-wal", "#{database_path}-shm" ])
+  end
+
   private
     def shard
       # Prefixed so no tenant name can collide with Rails' :default shard,

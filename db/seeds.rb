@@ -1,2 +1,3 @@
-# Idempotent. In self_host mode the app runs with exactly one tenant.
-Tenant.provision("default")
+# Idempotent. self_host mode runs with exactly one tenant; hosted mode
+# provisions tenants explicitly via bin/rails tenants:provision NAME=...
+Tenant.provision("default") if Deployment.self_host?
