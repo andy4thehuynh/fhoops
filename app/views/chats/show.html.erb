@@ -4,6 +4,12 @@
   <%= link_to "‹", root_path, class: "back", aria: { label: "Back" } %>
   <span class="avatar"><%= @chat.contact.display_name.first.upcase %></span>
   <h1><%= @chat.contact.display_name %></h1>
+
+  <% if @chat.contact.favorite %>
+    <%= button_to "★", favorite_path(@chat.contact), method: :delete, class: "star", form_class: "star-form", title: "Unpin from favorites" %>
+  <% else %>
+    <%= button_to "☆", favorites_path(contact_id: @chat.contact.id), class: "star", form_class: "star-form", title: "Pin to favorites" %>
+  <% end %>
 </header>
 
 <section class="thread" data-controller="thread">

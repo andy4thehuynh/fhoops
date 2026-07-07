@@ -8,7 +8,8 @@
 </header>
 
 <% if @favorites.any? %>
-  <nav class="favorites">
+  <nav class="favorites" data-controller="favorites" data-favorites-url-value="<%= favorites_order_path %>"
+       data-action="dragstart->favorites#dragstart dragover->favorites#dragover dragend->favorites#dragend">
     <% @favorites.each do |contact| %>
       <%= render "favorite", contact: contact %>
     <% end %>
