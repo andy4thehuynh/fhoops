@@ -1,0 +1,25 @@
+<%# A page of bubbles, oldest first. When there are earlier messages, a
+    loader frame sits on top; following it fetches the previous page, whose
+    response arrives wrapped in a frame with the same id and replaces the
+    loader in place — bubbles above, loader gone, chain continues. %>
+<% page = capture do %>
+  <% if more %>
+    <%= turbo_frame_tag "earlier_#{messages.first.id}" do %>
+      <div class="load-earlier">
+        <%= link_to "Load earlier messages", chat_path(chat, before: messages.first.id) %>
+      </div>
+    <% end %>
+  <% end %>
+
+  <% messages.each do |message| %>
+    <%= render "message", message: message %>
+  <% end %>
+<% end %>
+
+<% if cursor %>
+  <%= turbo_frame_tag "earlier_#{cursor}" do %>
+    <%= page %>
+  <% end %>
+<% else %>
+  <%= page %>
+<% end %>

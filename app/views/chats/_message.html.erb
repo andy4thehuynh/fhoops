@@ -1,0 +1,9 @@
+<div class="bubble-row <%= "mine" if message.is_from_me %>">
+  <div class="bubble">
+    <% message.attachments.each do |attachment| %>
+      <span class="attachment-chip">📎 <%= attachment.filename %></span>
+    <% end %>
+    <%= message.body %>
+  </div>
+  <span class="bubble-time"><%= succinct_timestamp(message.sent_at) %></span>
+</div>
