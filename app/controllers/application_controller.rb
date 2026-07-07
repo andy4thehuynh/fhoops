@@ -10,7 +10,6 @@ class ApplicationController < ActionController::Base
 
   private
     def switch_to_current_tenant(&)
-      Current.tenant = Tenant.default
-      Current.tenant.switch(&)
+      Tenant.default.switch(&)
     end
 end

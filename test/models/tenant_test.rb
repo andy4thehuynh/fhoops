@@ -1,17 +1,6 @@
 require "test_helper"
 
 class TenantTest < ActiveSupport::TestCase
-  setup do
-    @tenants = []
-  end
-
-  teardown do
-    @tenants.each do |tenant|
-      path = tenant.database_path.to_s
-      FileUtils.rm_f([ path, "#{path}-wal", "#{path}-shm" ])
-    end
-  end
-
   test "requires a well-formed name" do
     assert_not Tenant.new(name: "").valid?
     assert_not Tenant.new(name: "No Spaces!").valid?
@@ -19,12 +8,12 @@ class TenantTest < ActiveSupport::TestCase
   end
 
   test "name is unique" do
-    tenant = provision
+    tenant = provision_tenant
     assert_not Tenant.new(name: tenant.name).valid?
   end
 
   test "provisioning creates the tenant's database file and is idempotent" do
-    tenant = provision
+    tenant = provision_tenant
     assert tenant.database_path.exist?
 
     assert_equal tenant, Tenant.provision(tenant.name)
@@ -32,13 +21,13 @@ class TenantTest < ActiveSupport::TestCase
   end
 
   test "tenant databases run in WAL mode" do
-    provision.switch do
+    provision_tenant.switch do
       assert_equal "wal", TenantRecord.lease_connection.select_value("PRAGMA journal_mode")
     end
   end
 
   test "sqlite-vec answers nearest-neighbor queries inside a tenant database" do
-    provision.switch do
+    provision_tenant.switch do
       connection = TenantRecord.lease_connection
       connection.execute("CREATE VIRTUAL TABLE scratch_vectors USING vec0(embedding float[4])")
       connection.execute(<<~SQL)
@@ -55,8 +44,8 @@ class TenantTest < ActiveSupport::TestCase
   end
 
   test "tenants are isolated from each other" do
-    one = provision
-    two = provision
+    one = provision_tenant
+    two = provision_tenant
 
     one.switch do
       connection = TenantRecord.lease_connection
@@ -70,15 +59,10 @@ class TenantTest < ActiveSupport::TestCase
   end
 
   test "tenant records are unreachable outside a switch" do
-    provision
+    provision_tenant
 
     assert_raises ActiveRecord::ConnectionNotEstablished do
       TenantRecord.lease_connection
     end
   end
-
-  private
-    def provision
-      Tenant.provision("t#{SecureRandom.hex(4)}").tap { |tenant| @tenants << tenant }
-    end
 end
