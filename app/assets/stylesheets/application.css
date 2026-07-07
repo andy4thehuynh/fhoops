@@ -1,10 +1,190 @@
-/*
- * This is a manifest file that'll be compiled into application.css.
- *
- * With Propshaft, assets are served efficiently without preprocessing steps. You can still include
- * application-wide styles in this file, but keep in mind that CSS precedence will follow the standard
- * cascading order, meaning styles declared later in the document or manifest will override earlier ones,
- * depending on specificity.
- *
- * Consider organizing styles into separate files for maintainability.
- */
+/* iKeep — plain CSS, iMessage-flavored, comfortable inside Hotwire Native. */
+
+:root {
+  --bg: #ffffff;
+  --ink: #1c1c1e;
+  --muted: #8e8e93;
+  --line: #e5e5ea;
+  --blue: #007aff;
+  --bubble-them: #e9e9eb;
+  --bubble-me: #007aff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+
+.app { max-width: 44rem; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+
+/* Top bar with the pinned search field */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.search input[type="search"] {
+  width: 100%;
+  padding: 0.45rem 0.8rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 0.6rem;
+  background: #7676801f;
+  outline: none;
+}
+
+/* Favorites strip */
+.favorites {
+  display: flex;
+  gap: 1rem;
+  padding: 0.8rem 1rem 0.4rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+}
+
+.favorite {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 4.2rem;
+  flex: none;
+  text-align: center;
+}
+
+.favorite.dragging { opacity: 0.4; }
+
+.favorite-name {
+  font-size: 0.75rem;
+  color: var(--muted);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  flex: none;
+  border-radius: 50%;
+  background: linear-gradient(#9fa4ac, #7d8288);
+  color: white;
+  font-weight: 600;
+}
+
+.avatar-large { width: 3.4rem; height: 3.4rem; font-size: 1.3rem; }
+
+/* Chat rows */
+.chats { display: flex; flex-direction: column; }
+
+.chat-row {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  padding: 0.7rem 1rem;
+}
+
+.chat-row:active { background: #7676801a; }
+
+.chat-info { flex: 1; min-width: 0; border-bottom: 1px solid var(--line); padding-bottom: 0.7rem; }
+
+.chat-row:last-child .chat-info { border-bottom: none; }
+
+.chat-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+
+.chat-name { font-weight: 600; }
+
+.chat-time { font-size: 0.8rem; color: var(--muted); flex: none; }
+
+.chat-snippet {
+  color: var(--muted);
+  font-size: 0.92rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.empty { padding: 3rem 1.5rem; text-align: center; color: var(--muted); }
+
+/* Thread screen */
+.thread-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+
+.thread-header .back { color: var(--blue); font-size: 1.4rem; line-height: 1; }
+
+.thread-header h1 { font-size: 1rem; margin: 0; }
+
+.thread {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.8rem 1rem 1.2rem;
+}
+
+.load-earlier { text-align: center; padding: 0.4rem; }
+.load-earlier a { color: var(--blue); font-size: 0.9rem; }
+
+.bubble-row { display: flex; flex-direction: column; align-items: flex-start; }
+.bubble-row.mine { align-items: flex-end; }
+
+.bubble {
+  max-width: 72%;
+  padding: 0.45rem 0.8rem;
+  border-radius: 1.1rem;
+  background: var(--bubble-them);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bubble-row.mine .bubble { background: var(--bubble-me); color: white; }
+
+.bubble .attachment-chip {
+  display: block;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.bubble-time {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 0.15rem 0.4rem 0.35rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --ink: #f2f2f7;
+    --line: #2c2c2e;
+    --bubble-them: #26262a;
+  }
+
+  .search input[type="search"] { background: #7676803d; color: var(--ink); }
+}

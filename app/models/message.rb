@@ -7,4 +7,6 @@ class Message < TenantRecord
   validates :guid, presence: true, uniqueness: true
 
   scope :chronological, -> { order(:sent_at, :id) }
+  scope :reverse_chronological, -> { order(sent_at: :desc, id: :desc) }
+  scope :before, ->(message) { where("(sent_at, id) < (?, ?)", message.sent_at, message.id) }
 end

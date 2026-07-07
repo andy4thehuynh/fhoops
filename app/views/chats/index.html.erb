@@ -1,0 +1,44 @@
+<% content_for :title, "Messages" %>
+
+<header class="topbar">
+  <%= form_with url: root_path, method: :get, class: "search" do |form| %>
+    <%= form.search_field :q, value: params[:q], placeholder: "Search", autocomplete: "off",
+          oninput: "this.form.requestSubmit()", data: { turbo_frame: "chat_list", turbo_action: "advance" } %>
+  <% end %>
+</header>
+
+<% if @favorites.any? %>
+  <nav class="favorites">
+    <% @favorites.each do |contact| %>
+      <%= render "favorite", contact: contact %>
+    <% end %>
+  </nav>
+<% end %>
+
+<%= turbo_frame_tag "chat_list", target: "_top" do %>
+  <main class="chats">
+    <% @chats.each do |chat| %>
+      <% last = chat.last_message %>
+      <%= link_to chat_path(chat), class: "chat-row" do %>
+        <span class="avatar"><%= chat.contact.display_name.first.upcase %></span>
+        <span class="chat-info">
+          <span class="chat-top">
+            <span class="chat-name"><%= chat.contact.display_name %></span>
+            <span class="chat-time"><%= succinct_timestamp(last&.sent_at) %></span>
+          </span>
+          <span class="chat-snippet"><%= truncate(last&.body.presence || "Attachment", length: 90) %></span>
+        </span>
+      <% end %>
+    <% end %>
+
+    <% if @chats.empty? %>
+      <p class="empty">
+        <% if params[:q].present? %>
+          No conversations match “<%= params[:q] %>”.
+        <% else %>
+          Nothing archived yet. Run <code>bin/rails archive:import SOURCE=/path/to/export</code> to bring your messages in.
+        <% end %>
+      </p>
+    <% end %>
+  </main>
+<% end %>

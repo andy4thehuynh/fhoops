@@ -1,0 +1,4 @@
+<%= link_to chat_path(contact.chat), class: "favorite" do %>
+  <span class="avatar avatar-large"><%= contact.display_name.first.upcase %></span>
+  <span class="favorite-name"><%= contact.display_name %></span>
+<% end %>
